@@ -4,20 +4,20 @@ const youtubedl = require('youtube-dl-exec');
 
 const app = express();
 
-// CORS को कन्फिगर करें ताकि आपके दोस्त की वेबसाइट इसे एक्सेस कर सके
+// 1. CORS Setup - इसे थोड़ा आसान बनाया है ताकि एरर न आए
 app.use(cors({
     origin: (origin, callback) => {
-        // अगर कोई ओरिजिन नहीं है (जैसे Postman) या वो हमारी लिस्ट में है, तो Allow करें
         const allowedOrigins = [
-            "https://shushantp.vercel.app/projects",
+            "https://shushantp.vercel.app",
             "https://shushantprojects.vercel.app",
-            "http://127.0.0.1:5500"
+            "http://127.0.0.1:5500",
+            "http://localhost:5500"
         ];
-        
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        // origin.startsWith का यूज़ किया है ताकि सब-पेज (जैसे /projects) भी काम करें
+        if (!origin || allowedOrigins.some(o => origin.startsWith(o))) {
             callback(null, true);
         } else {
-            callback(new Error("CORS policy says: Access Denied!"));
+            callback(new Error("CORS policy says: Access Denied for origin: " + origin));
         }
     },
     methods: ['GET', 'POST', 'OPTIONS'],
@@ -26,25 +26,32 @@ app.use(cors({
 
 app.use(express.json());
 
-// API Endpoint
+// 2. Health Check Route
+app.get('/', (req, res) => res.send('Universal Video API is Running!'));
+
+// 3. Main API Endpoint
 app.post('/api/resolve', async (req, res) => {
     const { url } = req.body;
 
     if (!url) {
-        return res.status(400).json({ error: 'URL is required' });
+        return res.status(400).json({ success: false, error: 'URL is required' });
     }
 
     try {
+        console.log(`Processing URL: ${url}`);
+        
         const videoInfo = await youtubedl(url, {
             dumpSingleJson: true,
             noCheckCertificates: true,
-            format: 'best',
+            noWarnings: true,
+            format: 'b', // 'best' की जगह 'b' यूज़ करें (yt-dlp warning से बचने के लिए)
             addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
         });
 
         let finalSrc = videoInfo.url;
 
         if (!finalSrc && videoInfo.formats) {
+            // सबसे बढ़िया क्वालिटी वाला फॉर्मेट ढूँढना जिसमें ऑडियो+वीडियो दोनों हो
             const bestCombined = videoInfo.formats
                 .filter(f => f.vcodec !== 'none' && f.acodec !== 'none' && f.url)
                 .sort((a, b) => (b.height || 0) - (a.height || 0))[0];
@@ -52,24 +59,28 @@ app.post('/api/resolve', async (req, res) => {
             finalSrc = bestCombined ? bestCombined.url : null;
         }
 
+        if (!finalSrc) throw new Error("Could not find a direct streamable link.");
+
         res.json({
             success: true,
             title: videoInfo.title,
-            src: finalSrc
+            src: finalSrc,
+            thumbnail: videoInfo.thumbnail
         });
 
-        // api/index.js के अंदर catch वाले हिस्से को ऐसे बदलें:
     } catch (error) {
-        console.error('SERVER SIDE ERROR:', error); // यह टर्मिनल में असली एरर दिखाएगा
+        console.error('SERVER SIDE ERROR:', error.message);
         res.status(500).json({
             success: false,
-            error: error.message,
-            details: "Check terminal for more info"
+            error: error.message
         });
     }
 });
 
-// डिफ़ॉल्ट रूट
-app.get('/', (req, res) => res.send('Universal Video API is Running!'));
+// 4. Port Listener - Render.com के लिए यह सबसे ज़रूरी है
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 API is running on port ${PORT}`);
+});
 
 module.exports = app;
