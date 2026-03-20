@@ -47,7 +47,7 @@ app.post('/api/resolve', async (req, res) => {
             format: 'b', // 'best' की जगह 'b' यूज़ करें (yt-dlp warning से बचने के लिए)
             // addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
             addHeader: [
-                'X-Forwarded-For: 8.8.8.8', // किसी रैंडम पब्लिक आईपी का इस्तेमाल
+                'X-Forwarded-For: 192.168.1.0', // किसी रैंडम पब्लिक आईपी का इस्तेमाल
                 'referer:youtube.com',
                 'user-agent:Mozilla/5.0'
             ]
