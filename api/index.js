@@ -44,13 +44,14 @@ app.post('/api/resolve', async (req, res) => {
             dumpSingleJson: true,
             noCheckCertificates: true,
             noWarnings: true,
-            format: 'b', // 'best' की जगह 'b' यूज़ करें (yt-dlp warning से बचने के लिए)
-            // addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
-            addHeader: [
-                'X-Forwarded-For: 192.168.0.1', // किसी रैंडम पब्लिक आईपी का इस्तेमाल
-                'referer:youtube.com',
-                'user-agent:Mozilla/5.0'
-            ]
+            format: 'b', 
+            // addHeader: [
+            //     'X-Forwarded-For: 192.168.0.1', // किसी रैंडम पब्लिक आईपी का इस्तेमाल
+            //     'referer:youtube.com',
+            //     'user-agent:Mozilla/5.0'
+            // ]
+            referer: 'https://www.youtube.com/',
+            userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
         });
 
         let finalSrc = videoInfo.url;
