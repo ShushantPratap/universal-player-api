@@ -30,7 +30,7 @@ app.use(express.json());
 app.get('/', (req, res) => res.send('Universal Video API is Running!'));
 
 // 3. Main API Endpoint
-app.post('api/resolve', async (req, res) => {
+app.post('/api/resolve', async (req, res) => {
     const { url } = req.body;
 
     if (!url) {
